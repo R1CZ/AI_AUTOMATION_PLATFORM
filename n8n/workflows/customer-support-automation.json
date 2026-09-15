@@ -1,0 +1,207 @@
+{
+  "name": "AutoFlow AI - Customer Support Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "customer-support",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "autoflow-customer-support"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Validate incoming webhook data\nconst data = $input.first().json.body;\n\nif (!data.name || !data.email || !data.message) {\n  throw new Error('Missing required fields: name, email, message');\n}\n\n// Sanitize input\nconst sanitized = {\n  name: data.name.trim(),\n  email: data.email.trim().toLowerCase(),\n  message: data.message.trim(),\n  received_at: new Date().toISOString()\n};\n\nreturn [{ json: sanitized }];"
+      },
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-service:8001/api/classify",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "AI Classification (Python)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.result.priority }}",
+              "value2": "high"
+            }
+          ]
+        }
+      },
+      "name": "Priority Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:3001/api/tickets",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.name }}"
+            },
+            {
+              "name": "email",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "category",
+              "value": "={{ $('AI Classification (Python)').first().json.result.category }}"
+            },
+            {
+              "name": "priority",
+              "value": "={{ $('AI Classification (Python)').first().json.result.priority }}"
+            },
+            {
+              "name": "sentiment",
+              "value": "={{ $('AI Classification (Python)').first().json.result.sentiment }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Store in Database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1130, 200]
+    },
+    {
+      "parameters": {
+        "channel": "#support-urgent",
+        "text": "🚨 *Urgent Ticket Created*\n\n*Customer:* {{ $json.name }}\n*Email:* {{ $json.email }}\n*Category:* {{ $('AI Classification (Python)').first().json.result.category }}\n*Priority:* HIGH\n*Sentiment:* {{ $('AI Classification (Python)').first().json.result.sentiment }}\n\n*Message:* {{ $json.message }}"
+      },
+      "name": "Notify Support Team",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [1350, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:3001/api/tickets",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.name }}"
+            },
+            {
+              "name": "email",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "category",
+              "value": "={{ $('AI Classification (Python)').first().json.result.category }}"
+            },
+            {
+              "name": "priority",
+              "value": "normal"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Store Normal Priority",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1130, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"message\": \"Ticket created successfully\",\n  \"ticket_id\": \"TKT-{{ $randomInt(1000, 9999) }}\",\n  \"priority\": \"{{ $('AI Classification (Python)').first().json.result.priority }}\",\n  \"category\": \"{{ $('AI Classification (Python)').first().json.result.category }}\"\n}"
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1570, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [{ "node": "Validate Input", "type": "main", "index": 0 }]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [{ "node": "AI Classification (Python)", "type": "main", "index": 0 }]
+      ]
+    },
+    "AI Classification (Python)": {
+      "main": [
+        [{ "node": "Priority Check", "type": "main", "index": 0 }]
+      ]
+    },
+    "Priority Check": {
+      "main": [
+        [{ "node": "Store in Database", "type": "main", "index": 0 }],
+        [{ "node": "Store Normal Priority", "type": "main", "index": 0 }]
+      ]
+    },
+    "Store in Database": {
+      "main": [
+        [{ "node": "Notify Support Team", "type": "main", "index": 0 }]
+      ]
+    },
+    "Notify Support Team": {
+      "main": [
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    },
+    "Store Normal Priority": {
+      "main": [
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    { "name": "autoflow" },
+    { "name": "customer-support" },
+    { "name": "ai-classification" }
+  ],
+  "triggerCount": 1
+}

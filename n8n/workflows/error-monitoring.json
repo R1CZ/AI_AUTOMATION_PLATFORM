@@ -1,0 +1,115 @@
+{
+  "name": "AutoFlow AI - Error Monitoring & Alerting",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 5 }]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://backend:3001/api/executions?status=failed&limit=10",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "Check Failed Executions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.data.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "name": "Has Failures?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-service:8001/api/transform",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": {{ JSON.stringify($json.data) }},\n  \"transformation\": \"error_analysis\"\n}",
+        "options": {}
+      },
+      "name": "Python Error Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [910, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:3001/api/error-logs",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "errors", "value": "={{ JSON.stringify($json.data) }}" },
+            { "name": "analyzed_at", "value": "={{ new Date().toISOString() }}" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Log Errors",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1130, 200]
+    },
+    {
+      "parameters": {
+        "channel": "#ops-alerts",
+        "text": "⚠️ *Automation Failures Detected*\n\n{{ $json.data.length }} workflow(s) have failed in the last 5 minutes.\n\n{{ $json.data.map(e => `• ${e.workflowName}: ${e.error || 'Unknown error'}`).join('\\n') }}\n\nCheck dashboard for details."
+      },
+      "name": "Alert Admin",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [1350, 200]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{ "node": "Check Failed Executions", "type": "main", "index": 0 }]]
+    },
+    "Check Failed Executions": {
+      "main": [[{ "node": "Has Failures?", "type": "main", "index": 0 }]]
+    },
+    "Has Failures?": {
+      "main": [
+        [{ "node": "Python Error Analysis", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Python Error Analysis": {
+      "main": [[{ "node": "Log Errors", "type": "main", "index": 0 }]]
+    },
+    "Log Errors": {
+      "main": [[{ "node": "Alert Admin", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [
+    { "name": "autoflow" },
+    { "name": "monitoring" },
+    { "name": "alerting" }
+  ],
+  "triggerCount": 1
+}

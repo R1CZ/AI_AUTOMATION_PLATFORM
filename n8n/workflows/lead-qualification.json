@@ -1,0 +1,155 @@
+{
+  "name": "AutoFlow AI - Lead Qualification Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "New Lead Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "autoflow-new-lead"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Validate lead data\nconst lead = $input.first().json.body;\n\nconst errors = [];\nif (!lead.email) errors.push('email is required');\nif (!lead.company) errors.push('company is required');\n\nif (errors.length > 0) {\n  throw new Error('Validation failed: ' + errors.join(', '));\n}\n\nreturn [{\n  json: {\n    email: lead.email.trim().toLowerCase(),\n    name: lead.name || 'Unknown',\n    company: lead.company.trim(),\n    industry: lead.industry || 'unknown',\n    company_size: lead.company_size || 'small',\n    budget: lead.budget || 'unknown',\n    urgency: lead.urgency || 'normal',\n    message: lead.message || '',\n    source: lead.source || 'webhook'\n  }\n}];"
+      },
+      "name": "Validate Lead",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-service:8001/api/score",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"lead_data\": {\n    \"company\": \"{{ $json.company }}\",\n    \"industry\": \"{{ $json.industry }}\",\n    \"company_size\": \"{{ $json.company_size }}\",\n    \"budget\": \"{{ $json.budget }}\",\n    \"urgency\": \"{{ $json.urgency }}\"\n  }\n}",
+        "options": {}
+      },
+      "name": "Python Lead Scoring",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.score }}",
+              "operation": "largerEqual",
+              "value2": 70
+            }
+          ]
+        }
+      },
+      "name": "Quality Gate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:3001/api/leads",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "email", "value": "={{ $('Validate Lead').first().json.email }}" },
+            { "name": "name", "value": "={{ $('Validate Lead').first().json.name }}" },
+            { "name": "company", "value": "={{ $('Validate Lead').first().json.company }}" },
+            { "name": "score", "value": "={{ $json.score }}" },
+            { "name": "tier", "value": "={{ $json.tier }}" },
+            { "name": "status", "value": "qualified" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Store Qualified Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1130, 200]
+    },
+    {
+      "parameters": {
+        "channel": "#sales-hot-leads",
+        "text": "🔥 *Hot Lead Qualified!*\n\n*Name:* {{ $('Validate Lead').first().json.name }}\n*Company:* {{ $('Validate Lead').first().json.company }}\n*Score:* {{ $json.score }}/100\n*Tier:* {{ $json.tier }}\n*Industry:* {{ $('Validate Lead').first().json.industry }}\n*Budget:* {{ $('Validate Lead').first().json.budget }}\n\n*Recommendation:* {{ $json.recommendation }}"
+      },
+      "name": "Notify Sales Team",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [1350, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:3001/api/leads",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "email", "value": "={{ $('Validate Lead').first().json.email }}" },
+            { "name": "name", "value": "={{ $('Validate Lead').first().json.name }}" },
+            { "name": "company", "value": "={{ $('Validate Lead').first().json.company }}" },
+            { "name": "score", "value": "={{ $json.score }}" },
+            { "name": "tier", "value": "={{ $json.tier }}" },
+            { "name": "status", "value": "nurture" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Store for Nurture",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1130, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"processed\",\n  \"lead_score\": {{ $json.score }},\n  \"tier\": \"{{ $json.tier }}\",\n  \"qualified\": {{ $json.score >= 70 }},\n  \"next_action\": \"{{ $json.recommendation }}\"\n}"
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1570, 300]
+    }
+  ],
+  "connections": {
+    "New Lead Webhook": {
+      "main": [[{ "node": "Validate Lead", "type": "main", "index": 0 }]]
+    },
+    "Validate Lead": {
+      "main": [[{ "node": "Python Lead Scoring", "type": "main", "index": 0 }]]
+    },
+    "Python Lead Scoring": {
+      "main": [[{ "node": "Quality Gate", "type": "main", "index": 0 }]]
+    },
+    "Quality Gate": {
+      "main": [
+        [{ "node": "Store Qualified Lead", "type": "main", "index": 0 }],
+        [{ "node": "Store for Nurture", "type": "main", "index": 0 }]
+      ]
+    },
+    "Store Qualified Lead": {
+      "main": [[{ "node": "Notify Sales Team", "type": "main", "index": 0 }]]
+    },
+    "Notify Sales Team": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    },
+    "Store for Nurture": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [
+    { "name": "autoflow" },
+    { "name": "lead-qualification" },
+    { "name": "scoring" }
+  ],
+  "triggerCount": 1
+}

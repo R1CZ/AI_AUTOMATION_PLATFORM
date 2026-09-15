@@ -1,0 +1,149 @@
+version: '3.8'
+
+services:
+  # Frontend - React SPA
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://backend:3001
+    networks:
+      - autoflow-network
+
+  # Backend API - Node.js/Express
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://autoflow:autoflow_secret@postgres:5432/autoflow
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - REDIS_URL=redis://redis:6379
+      - PYTHON_SERVICE_URL=http://python-service:8001
+      - PHP_SERVICE_URL=http://php-service:8080
+      - N8N_URL=http://n8n:5678
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AI_PROVIDER=${AI_PROVIDER:-openai}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - CORS_ORIGIN=http://localhost:3000
+      - RATE_LIMIT_WINDOW=60000
+      - RATE_LIMIT_MAX=1000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - autoflow-network
+    restart: unless-stopped
+
+  # Python Service - AI & Data Processing
+  python-service:
+    build:
+      context: ./python-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - AI_PROVIDER=${AI_PROVIDER:-openai}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+    networks:
+      - autoflow-network
+    restart: unless-stopped
+
+  # PHP Service - Legacy Integration
+  php-service:
+    build:
+      context: ./php-service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      - PHP_SERVICE_API_KEY=${PHP_SERVICE_API_KEY}
+      - DB_HOST=postgres
+      - DB_NAME=autoflow_legacy
+      - APP_ENV=production
+    networks:
+      - autoflow-network
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=autoflow
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-autoflow_secret}
+      - POSTGRES_DB=autoflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autoflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autoflow-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - autoflow-network
+    restart: unless-stopped
+
+  # n8n Workflow Engine
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-admin}
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=autoflow
+      - DB_POSTGRESDB_USER=autoflow
+      - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD:-autoflow_secret}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/workflows
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - autoflow-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  n8n_data:
+
+networks:
+  autoflow-network:
+    driver: bridge
