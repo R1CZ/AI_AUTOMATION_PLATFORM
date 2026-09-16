@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAppContext } from '../App';
+import { useAppContext } from '../context/AppContext';
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Github } from 'lucide-react';
 
 export default function Login() {

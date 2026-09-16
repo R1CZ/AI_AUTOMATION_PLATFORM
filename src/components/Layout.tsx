@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAppContext } from '../App';
+import { useAppContext } from '../context/AppContext';
 import { 
   LayoutDashboard, GitBranch, Play, Plug, Webhook, 
   FileCode, Shield, Menu, X, LogOut, ChevronRight, Zap

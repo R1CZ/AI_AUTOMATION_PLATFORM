@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, createContext, useContext } from 'react';
+import { useState } from 'react';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import Workflows from './pages/Workflows';
@@ -12,28 +12,9 @@ import AdminPanel from './pages/AdminPanel';
 import Technology from './pages/Technology';
 import Login from './pages/Login';
 import Layout from './components/Layout';
+import { AppContext } from './context/AppContext';
 import { User } from './types';
 import { mockUser } from './data/mockData';
-
-interface AppContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-}
-
-export const AppContext = createContext<AppContextType>({
-  user: null,
-  isAuthenticated: false,
-  login: () => false,
-  logout: () => {},
-  sidebarOpen: true,
-  setSidebarOpen: () => {},
-});
-
-export const useAppContext = () => useContext(AppContext);
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
