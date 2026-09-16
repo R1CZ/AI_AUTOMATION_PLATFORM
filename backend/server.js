@@ -34,15 +34,49 @@ const config = {
 
 // ============ DATABASE ============
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+let pool = null;
+let redis = null;
 
-// Redis client
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+// Initialize database connection
+try {
+  if (process.env.DATABASE_URL) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+    
+    pool.on('error', (err) => {
+      console.error('Unexpected database error:', err);
+    });
+  } else {
+    console.warn('WARNING: DATABASE_URL not set. Database features will be disabled.');
+  }
+} catch (err) {
+  console.error('Failed to initialize database:', err.message);
+}
+
+// Initialize Redis connection
+try {
+  if (process.env.REDIS_URL) {
+    redis = new Redis(process.env.REDIS_URL, {
+      retryStrategy: (times) => {
+        if (times > 3) return null; // Stop retrying
+        return Math.min(times * 200, 2000);
+      },
+      maxRetriesPerRequest: 3,
+    });
+    
+    redis.on('error', (err) => {
+      console.error('Redis error:', err.message);
+    });
+  } else {
+    console.warn('WARNING: REDIS_URL not set. Caching features will be disabled.');
+  }
+} catch (err) {
+  console.error('Failed to initialize Redis:', err.message);
+}
 
 // ============ MIDDLEWARE ============
 
@@ -117,30 +151,50 @@ const validatePassword = (password) => {
 
 // Health check
 app.get('/api/health', async (req, res) => {
-  try {
-    // Check database
-    await pool.query('SELECT 1');
-    
-    // Check Redis
-    await redis.ping();
+  const services = {
+    api: 'healthy',
+    database: 'unknown',
+    redis: 'unknown',
+  };
+  
+  let overallStatus = 'healthy';
 
-    res.json({
-      status: 'healthy',
-      version: '1.0.0',
-      timestamp: new Date().toISOString(),
-      services: {
-        api: 'healthy',
-        database: 'healthy',
-        redis: 'healthy',
-      }
-    });
-  } catch (err) {
-    res.status(503).json({
-      status: 'unhealthy',
-      error: err.message,
-      timestamp: new Date().toISOString()
-    });
+  // Check database
+  if (pool) {
+    try {
+      await pool.query('SELECT 1');
+      services.database = 'healthy';
+    } catch (err) {
+      services.database = 'unhealthy';
+      overallStatus = 'degraded';
+    }
+  } else {
+    services.database = 'not_configured';
+    overallStatus = 'degraded';
   }
+
+  // Check Redis
+  if (redis) {
+    try {
+      await redis.ping();
+      services.redis = 'healthy';
+    } catch (err) {
+      services.redis = 'unhealthy';
+      overallStatus = 'degraded';
+    }
+  } else {
+    services.redis = 'not_configured';
+    overallStatus = 'degraded';
+  }
+
+  const statusCode = overallStatus === 'healthy' ? 200 : 503;
+  
+  res.status(statusCode).json({
+    status: overallStatus,
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    services
+  });
 });
 
 // Auth - Register
