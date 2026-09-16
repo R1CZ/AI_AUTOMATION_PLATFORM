@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Settings, ExternalLink, Search, Plus, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
+import { getIntegrationLogo } from '../components/BrandLogos';
 
 export default function Integrations() {
   const [search, setSearch] = useState('');
@@ -66,7 +67,9 @@ export default function Integrations() {
           {filtered.map((integration) => (
             <div key={integration.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-all">
               <div className="flex items-start justify-between mb-4">
-                <div className="text-3xl">{integration.icon || '🔌'}</div>
+                <div className="w-12 h-12 flex items-center justify-center">
+                  {getIntegrationLogo(integration.name, 48)}
+                </div>
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                   integration.status === 'connected' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                 }`}>

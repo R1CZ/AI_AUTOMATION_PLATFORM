@@ -5,6 +5,7 @@ import {
   Server, Cpu, Workflow, Bot
 } from 'lucide-react';
 import MarketingVideo from '../components/MarketingVideo';
+import { getIntegrationLogo } from '../components/BrandLogos';
 
 export default function LandingPage() {
   return (
@@ -141,21 +142,23 @@ export default function LandingPage() {
           <p className="text-lg text-slate-400 mb-12">Integrate with your favorite tools and platforms</p>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {[
-              { name: 'n8n', icon: '⚡' },
-              { name: 'Make.com', icon: '🔗' },
-              { name: 'Zapier', icon: '⚙️' },
-              { name: 'OpenAI', icon: '🤖' },
-              { name: 'Slack', icon: '💬' },
-              { name: 'GitHub', icon: '🐙' },
-              { name: 'Google', icon: '🔵' },
-              { name: 'PostgreSQL', icon: '🐘' },
-              { name: 'Python', icon: '🐍' },
-              { name: 'PHP', icon: '🌐' },
-              { name: 'Docker', icon: '🐳' },
-              { name: 'Redis', icon: '🔴' },
+              { name: 'n8n' },
+              { name: 'Make.com' },
+              { name: 'Zapier' },
+              { name: 'OpenAI' },
+              { name: 'Slack' },
+              { name: 'GitHub' },
+              { name: 'Google' },
+              { name: 'PostgreSQL' },
+              { name: 'Python Service' },
+              { name: 'PHP Service' },
+              { name: 'Docker' },
+              { name: 'Redis' },
             ].map((app, i) => (
-              <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-violet-500 transition-all">
-                <div className="text-3xl mb-2">{app.icon}</div>
+              <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-violet-500 transition-all flex flex-col items-center">
+                <div className="w-12 h-12 flex items-center justify-center mb-2">
+                  {getIntegrationLogo(app.name, 48)}
+                </div>
                 <p className="text-sm text-slate-300 font-medium">{app.name}</p>
               </div>
             ))}
