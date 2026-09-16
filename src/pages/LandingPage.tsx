@@ -56,13 +56,16 @@ export default function LandingPage() {
             <Link to="/login" className="flex items-center gap-2 px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold text-lg transition-all shadow-lg shadow-violet-600/25">
               Start Automating <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link to="/technology" className="flex items-center gap-2 px-8 py-4 bg-white border-2 border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl font-semibold text-lg transition-all">
-              <Play className="w-5 h-5" /> View Demo
+            <Link 
+              to="/demo"
+              className="flex items-center gap-2 px-8 py-4 bg-white border-2 border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl font-semibold text-lg transition-all"
+            >
+              <Play className="w-5 h-5" /> Interactive Demo
             </Link>
           </div>
 
           {/* Hero Video */}
-          <div className="mt-16 relative">
+          <div id="demo-video" className="mt-16 relative">
             <MarketingVideo />
           </div>
         </div>
