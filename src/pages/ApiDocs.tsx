@@ -1,15 +1,34 @@
 import { useState } from 'react';
 import { Lock, Unlock, Copy, ChevronDown, ChevronRight } from 'lucide-react';
-import { mockApiEndpoints } from '../data/mockData';
+
+const apiEndpoints = [
+  { method: 'POST', path: '/api/auth/register', description: 'Register new user account', auth: false, category: 'Authentication' },
+  { method: 'POST', path: '/api/auth/login', description: 'Login and receive JWT token', auth: false, category: 'Authentication' },
+  { method: 'POST', path: '/api/auth/refresh', description: 'Refresh access token', auth: true, category: 'Authentication' },
+  { method: 'GET', path: '/api/workflows', description: 'List all workflows', auth: true, category: 'Workflows' },
+  { method: 'POST', path: '/api/workflows', description: 'Create new workflow', auth: true, category: 'Workflows' },
+  { method: 'GET', path: '/api/workflows/:id', description: 'Get workflow details', auth: true, category: 'Workflows' },
+  { method: 'PUT', path: '/api/workflows/:id', description: 'Update workflow', auth: true, category: 'Workflows' },
+  { method: 'DELETE', path: '/api/workflows/:id', description: 'Delete workflow', auth: true, category: 'Workflows' },
+  { method: 'POST', path: '/api/workflows/:id/execute', description: 'Execute workflow manually', auth: true, category: 'Workflows' },
+  { method: 'GET', path: '/api/executions', description: 'List executions', auth: true, category: 'Executions' },
+  { method: 'GET', path: '/api/executions/:id', description: 'Get execution details', auth: true, category: 'Executions' },
+  { method: 'POST', path: '/api/webhooks', description: 'Create webhook endpoint', auth: true, category: 'Webhooks' },
+  { method: 'GET', path: '/api/webhooks', description: 'List webhooks', auth: true, category: 'Webhooks' },
+  { method: 'POST', path: '/webhooks/:id', description: 'Receive webhook event (public)', auth: false, category: 'Webhooks' },
+  { method: 'GET', path: '/api/integrations', description: 'List integrations', auth: true, category: 'Integrations' },
+  { method: 'GET', path: '/api/analytics', description: 'Get analytics data', auth: true, category: 'Analytics' },
+  { method: 'GET', path: '/api/health', description: 'System health check', auth: false, category: 'System' },
+];
 
 export default function ApiDocs() {
   const [expandedCategory, setExpandedCategory] = useState<string | null>('Authentication');
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
 
-  const categories = [...new Set(mockApiEndpoints.map(e => e.category))];
+  const categories = [...new Set(apiEndpoints.map(e => e.category))];
   const groupedEndpoints = categories.map(cat => ({
     category: cat,
-    endpoints: mockApiEndpoints.filter(e => e.category === cat)
+    endpoints: apiEndpoints.filter(e => e.category === cat)
   }));
 
   const getMethodColor = (method: string) => {
@@ -36,12 +55,11 @@ export default function ApiDocs() {
         <p className="text-slate-600">Complete REST API reference for AutoFlow AI platform</p>
       </div>
 
-      {/* API Info */}
       <div className="grid md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-5 border border-gray-200">
           <p className="text-sm text-slate-500">Base URL</p>
           <code className="text-sm font-mono text-violet-700 bg-violet-50 px-2 py-1 rounded mt-1 inline-block">
-            https://api.autoflow.ai
+            {import.meta.env.VITE_API_URL || 'http://localhost:3001'}
           </code>
         </div>
         <div className="bg-white rounded-xl p-5 border border-gray-200">
@@ -54,12 +72,10 @@ export default function ApiDocs() {
         </div>
       </div>
 
-      {/* Authentication Example */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-4">Authentication</h3>
         <p className="text-sm text-slate-600 mb-4">
           All authenticated endpoints require a Bearer token in the Authorization header.
-          Obtain tokens via the /api/auth/login endpoint.
         </p>
         <div className="bg-slate-900 rounded-lg p-4 overflow-auto">
           <pre className="text-sm text-green-400">{`# Login
@@ -73,10 +89,13 @@ Content-Type: application/json
 
 # Response
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIs...",
-  "refresh_token": "dGhpcyBpcyBhIHJlZnJl...",
-  "expires_in": 3600,
-  "token_type": "Bearer"
+  "status": "success",
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIs...",
+    "refresh_token": "dGhpcyBpcyBhIHJlZnJl...",
+    "expires_in": 3600,
+    "token_type": "Bearer"
+  }
 }
 
 # Use token in requests
@@ -85,7 +104,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...`}</pre>
         </div>
       </div>
 
-      {/* Endpoints by Category */}
       <div className="space-y-4">
         {groupedEndpoints.map(({ category, endpoints }) => (
           <div key={category} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -132,42 +150,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...`}</pre>
             )}
           </div>
         ))}
-      </div>
-
-      {/* Error Responses */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Error Responses</h3>
-        <div className="space-y-3">
-          {[
-            { code: 400, name: 'Bad Request', desc: 'Invalid request body or parameters' },
-            { code: 401, name: 'Unauthorized', desc: 'Missing or invalid authentication token' },
-            { code: 403, name: 'Forbidden', desc: 'Insufficient permissions for this action' },
-            { code: 404, name: 'Not Found', desc: 'Resource does not exist' },
-            { code: 422, name: 'Unprocessable', desc: 'Validation failed for request data' },
-            { code: 429, name: 'Too Many Requests', desc: 'Rate limit exceeded' },
-            { code: 500, name: 'Server Error', desc: 'Internal server error' },
-          ].map((error) => (
-            <div key={error.code} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-bold text-red-600 min-w-[40px]">{error.code}</span>
-              <span className="text-sm font-medium text-slate-900 min-w-[120px]">{error.name}</span>
-              <span className="text-sm text-slate-600">{error.desc}</span>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 bg-slate-900 rounded-lg p-4 overflow-auto">
-          <pre className="text-sm text-green-400">{`{
-  "error": {
-    "code": 422,
-    "message": "Validation failed",
-    "details": [
-      {
-        "field": "email",
-        "message": "Invalid email format"
-      }
-    ]
-  }
-}`}</pre>
-        </div>
       </div>
     </div>
   );

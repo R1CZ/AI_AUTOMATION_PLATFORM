@@ -92,6 +92,8 @@ AutoFlow AI is a full-stack automation platform that demonstrates practical inte
 - Node.js 20+
 - Python 3.11+
 - PHP 8.3+
+- PostgreSQL 16+
+- Redis 7+
 
 ### Quick Start with Docker
 
@@ -104,10 +106,14 @@ cd autoflow-ai
 cp .env.example .env
 # Edit .env with your API keys and secrets
 
-# 3. Start all services
+# 3. Configure frontend
+cp .env.local.example .env.local
+# Set VITE_API_URL to your backend URL
+
+# 4. Start all services
 docker compose up -d
 
-# 4. Access the application
+# 5. Access the application
 # Frontend: http://localhost:3000
 # API: http://localhost:3001
 # n8n: http://localhost:5678
@@ -119,7 +125,9 @@ docker compose up -d
 
 ```bash
 # Frontend
-cd frontend && npm install && npm run dev
+npm install
+cp .env.local.example .env.local
+npm run dev
 
 # Backend
 cd backend && npm install && npm run dev
@@ -129,6 +137,16 @@ cd python-service && pip install -r requirements.txt && uvicorn main:app --reloa
 
 # PHP Service
 cd php-service && php -S localhost:8080 -t public
+```
+
+### Production Deployment
+
+```bash
+# Build frontend for production
+npm run build
+
+# Use Docker for production deployment
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ## 🔌 API Documentation

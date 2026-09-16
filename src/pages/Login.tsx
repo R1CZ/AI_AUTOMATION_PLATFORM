@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Github } from 'lucide-react';
+import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Github, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('alex@autoflow.ai');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,22 +19,24 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-
     if (!email || !password) {
       setError('Please fill in all fields');
       setLoading(false);
       return;
     }
 
-    const success = login(email, password);
-    if (success) {
-      navigate('/dashboard');
-    } else {
-      setError('Invalid credentials');
+    try {
+      const success = await login(email, password);
+      if (success) {
+        navigate('/dashboard');
+      } else {
+        setError('Invalid credentials. Please check your email and password.');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -58,7 +60,8 @@ export default function Login() {
           </p>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
               {error}
             </div>
           )}
@@ -128,7 +131,7 @@ export default function Login() {
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
                   {isLogin ? 'Sign In' : 'Create Account'} <ArrowRight className="w-4 h-4" />
@@ -136,29 +139,6 @@ export default function Login() {
               )}
             </button>
           </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-sm text-slate-500">or continue with</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
-          {/* OAuth Buttons */}
-          <div className="grid grid-cols-3 gap-3">
-            <button className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <span className="text-lg">🔵</span>
-              <span className="text-sm font-medium text-slate-700">Google</span>
-            </button>
-            <button className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <Github className="w-4 h-4" />
-              <span className="text-sm font-medium text-slate-700">GitHub</span>
-            </button>
-            <button className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <span className="text-lg">🟦</span>
-              <span className="text-sm font-medium text-slate-700">Microsoft</span>
-            </button>
-          </div>
 
           <p className="text-center text-sm text-slate-600 mt-6">
             {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
@@ -168,10 +148,6 @@ export default function Login() {
             >
               {isLogin ? 'Sign up' : 'Sign in'}
             </button>
-          </p>
-
-          <p className="text-center text-xs text-slate-400 mt-4">
-            Demo: Use any email/password to access the dashboard
           </p>
         </div>
       </div>

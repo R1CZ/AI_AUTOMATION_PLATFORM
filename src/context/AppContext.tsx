@@ -4,7 +4,7 @@ import { User } from '../types';
 export interface AppContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string) => Promise<boolean> | boolean;
   logout: () => void;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
