@@ -220,7 +220,7 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-8 pt-8 border-t border-slate-800 text-sm text-center">
-          <p>© 2024 AutoFlow AI. Built with React, TypeScript, n8n, Python, PHP, and AI.</p>
+          <p>© {new Date().getFullYear()} AutoFlow AI. Built with React, TypeScript, n8n, Python, PHP, and AI.</p>
         </div>
       </footer>
     </div>
