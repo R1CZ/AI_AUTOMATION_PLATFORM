@@ -4,6 +4,7 @@ import {
   ArrowRight, CheckCircle2, Play, Globe, Database,
   Server, Cpu, Workflow, Bot
 } from 'lucide-react';
+import MarketingVideo from '../components/MarketingVideo';
 
 export default function LandingPage() {
   return (
@@ -60,30 +61,9 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* Hero Visual */}
+          {/* Hero Video */}
           <div className="mt-16 relative">
-            <div className="bg-gradient-to-b from-slate-900 to-slate-800 rounded-2xl p-8 shadow-2xl border border-slate-700 max-w-4xl mx-auto">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="text-xs text-slate-400 ml-2">autoflow.ai/dashboard</span>
-              </div>
-              <div className="grid grid-cols-4 gap-3">
-                {['Workflows: 6', 'Executions: 47', 'Success: 98%', 'API Calls: 2.8k'].map((stat, i) => (
-                  <div key={i} className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
-                    <p className="text-xs text-slate-400">{stat.split(':')[0]}</p>
-                    <p className="text-lg font-bold text-white">{stat.split(':')[1]}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-full w-3/4 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full" />
-                </div>
-                <span className="text-xs text-green-400">● Live</span>
-              </div>
-            </div>
+            <MarketingVideo />
           </div>
         </div>
       </section>
