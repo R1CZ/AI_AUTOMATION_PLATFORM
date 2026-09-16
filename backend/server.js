@@ -835,15 +835,19 @@ app.get('/api/integrations', authenticate, async (req, res) => {
     // If no integrations in DB, return default list
     if (result.rows.length === 0) {
       const defaults = [
-        { id: 'int_1', name: 'n8n', category: 'Automation', status: 'disconnected', icon: '⚡', description: 'Workflow automation engine' },
-        { id: 'int_2', name: 'Make.com', category: 'Automation', status: 'disconnected', icon: '🔗', description: 'Visual integration platform' },
-        { id: 'int_3', name: 'Zapier', category: 'Automation', status: 'disconnected', icon: '⚙️', description: 'App integration platform' },
-        { id: 'int_4', name: 'OpenAI', category: 'AI', status: 'disconnected', icon: '🤖', description: 'GPT-4 AI processing' },
-        { id: 'int_5', name: 'Slack', category: 'Communication', status: 'disconnected', icon: '💬', description: 'Team notifications' },
-        { id: 'int_6', name: 'GitHub', category: 'Development', status: 'disconnected', icon: '🐙', description: 'Repository management' },
-        { id: 'int_7', name: 'PostgreSQL', category: 'Database', status: 'connected', icon: '🐘', description: 'Primary database' },
-        { id: 'int_8', name: 'Python Service', category: 'Processing', status: 'disconnected', icon: '🐍', description: 'Data processing & ML' },
-        { id: 'int_9', name: 'PHP Service', category: 'Legacy', status: 'disconnected', icon: '🌐', description: 'Legacy system bridge' },
+        { id: 'int_1', name: 'n8n', category: 'Automation', status: 'disconnected', description: 'Workflow automation engine' },
+        { id: 'int_2', name: 'Make.com', category: 'Automation', status: 'disconnected', description: 'Visual integration platform' },
+        { id: 'int_3', name: 'Zapier', category: 'Automation', status: 'disconnected', description: 'App integration platform' },
+        { id: 'int_4', name: 'OpenAI', category: 'AI', status: 'disconnected', description: 'GPT-4 AI processing' },
+        { id: 'int_5', name: 'Slack', category: 'Communication', status: 'disconnected', description: 'Team notifications' },
+        { id: 'int_6', name: 'GitHub', category: 'Development', status: 'disconnected', description: 'Repository management' },
+        { id: 'int_7', name: 'Google', category: 'OAuth', status: 'disconnected', description: 'Google Workspace integration' },
+        { id: 'int_8', name: 'Microsoft', category: 'OAuth', status: 'disconnected', description: 'Microsoft 365 integration' },
+        { id: 'int_9', name: 'PostgreSQL', category: 'Database', status: 'connected', description: 'Primary database' },
+        { id: 'int_10', name: 'Python Service', category: 'Processing', status: 'disconnected', description: 'Data processing & ML' },
+        { id: 'int_11', name: 'PHP Service', category: 'Legacy', status: 'disconnected', description: 'Legacy system bridge' },
+        { id: 'int_12', name: 'Docker', category: 'Infrastructure', status: 'connected', description: 'Container orchestration' },
+        { id: 'int_13', name: 'Redis', category: 'Cache', status: 'connected', description: 'Caching & session store' },
       ];
       return res.json({ status: 'success',  defaults });
     }

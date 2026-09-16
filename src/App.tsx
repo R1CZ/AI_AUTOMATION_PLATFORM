@@ -11,6 +11,7 @@ import ApiDocs from './pages/ApiDocs';
 import AdminPanel from './pages/AdminPanel';
 import Technology from './pages/Technology';
 import Login from './pages/Login';
+import Demo from './pages/Demo';
 import Layout from './components/Layout';
 import { AppContext } from './context/AppContext';
 import { User } from './types';
@@ -81,6 +82,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
           <Route path="/technology" element={<Technology />} />
+          <Route path="/demo" element={<Demo />} />
           <Route path="/dashboard" element={user ? <Layout><Dashboard /></Layout> : <Navigate to="/login" />} />
           <Route path="/workflows" element={user ? <Layout><Workflows /></Layout> : <Navigate to="/login" />} />
           <Route path="/workflows/new" element={user ? <Layout><WorkflowBuilder /></Layout> : <Navigate to="/login" />} />
