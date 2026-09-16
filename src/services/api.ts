@@ -44,9 +44,20 @@ class ApiService {
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      throw new Error(error.message || error.error?.message || `HTTP ${response.status}`);
     }
     return response.json();
+  }
+
+  private async safeFetch(url: string, options?: RequestInit): Promise<Response> {
+    try {
+      return await fetch(url, options);
+    } catch (err) {
+      if (err instanceof TypeError) {
+        throw new Error('Cannot connect to server. Please ensure the backend is running at ' + API_BASE_URL);
+      }
+      throw err;
+    }
   }
 
   setToken(token: string) {
@@ -62,7 +73,7 @@ class ApiService {
 
   // Authentication
   async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ email, password }),
@@ -77,7 +88,7 @@ class ApiService {
   }
 
   async register(name: string, email: string, password: string): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/auth/register`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ name, email, password }),
@@ -95,7 +106,7 @@ class ApiService {
     const refreshToken = localStorage.getItem('refresh_token');
     if (!refreshToken) throw new Error('No refresh token available');
 
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/auth/refresh`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ refresh_token: refreshToken }),
@@ -119,7 +130,7 @@ class ApiService {
     if (params?.status) queryParams.append('status', params.status);
     if (params?.search) queryParams.append('search', params.search);
 
-    const response = await fetch(
+    const response = await this.safeFetch(
       `${API_BASE_URL}/api/workflows?${queryParams.toString()}`,
       { headers: this.getHeaders() }
     );
@@ -128,7 +139,7 @@ class ApiService {
   }
 
   async getWorkflow(id: string) {
-    const response = await fetch(`${API_BASE_URL}/api/workflows/${id}`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/workflows/${id}`, {
       headers: this.getHeaders(),
     });
     
@@ -136,7 +147,7 @@ class ApiService {
   }
 
   async createWorkflow(workflow: any) {
-    const response = await fetch(`${API_BASE_URL}/api/workflows`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/workflows`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(workflow),
@@ -146,7 +157,7 @@ class ApiService {
   }
 
   async updateWorkflow(id: string, workflow: any) {
-    const response = await fetch(`${API_BASE_URL}/api/workflows/${id}`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/workflows/${id}`, {
       method: 'PUT',
       headers: this.getHeaders(),
       body: JSON.stringify(workflow),
@@ -156,7 +167,7 @@ class ApiService {
   }
 
   async deleteWorkflow(id: string) {
-    const response = await fetch(`${API_BASE_URL}/api/workflows/${id}`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/workflows/${id}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
@@ -165,7 +176,7 @@ class ApiService {
   }
 
   async executeWorkflow(id: string, inputData?: any) {
-    const response = await fetch(`${API_BASE_URL}/api/workflows/${id}/execute`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/workflows/${id}/execute`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ input_data: inputData }),
@@ -191,7 +202,7 @@ class ApiService {
     if (params?.from) queryParams.append('from', params.from);
     if (params?.to) queryParams.append('to', params.to);
 
-    const response = await fetch(
+    const response = await this.safeFetch(
       `${API_BASE_URL}/api/executions?${queryParams.toString()}`,
       { headers: this.getHeaders() }
     );
@@ -200,7 +211,7 @@ class ApiService {
   }
 
   async getExecution(id: string) {
-    const response = await fetch(`${API_BASE_URL}/api/executions/${id}`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/executions/${id}`, {
       headers: this.getHeaders(),
     });
     
@@ -209,7 +220,7 @@ class ApiService {
 
   // Webhooks
   async getWebhooks() {
-    const response = await fetch(`${API_BASE_URL}/api/webhooks`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/webhooks`, {
       headers: this.getHeaders(),
     });
     
@@ -217,7 +228,7 @@ class ApiService {
   }
 
   async createWebhook(webhook: { name: string; workflow_id: string }) {
-    const response = await fetch(`${API_BASE_URL}/api/webhooks`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/webhooks`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(webhook),
@@ -227,7 +238,7 @@ class ApiService {
   }
 
   async testWebhook(id: string, payload: any) {
-    const response = await fetch(`${API_BASE_URL}/api/webhooks/${id}/test`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/webhooks/${id}/test`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ payload }),
@@ -238,7 +249,7 @@ class ApiService {
 
   // Integrations
   async getIntegrations() {
-    const response = await fetch(`${API_BASE_URL}/api/integrations`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/integrations`, {
       headers: this.getHeaders(),
     });
     
@@ -246,7 +257,7 @@ class ApiService {
   }
 
   async connectIntegration(id: string, config: any) {
-    const response = await fetch(`${API_BASE_URL}/api/integrations/${id}/connect`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/integrations/${id}/connect`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(config),
@@ -256,7 +267,7 @@ class ApiService {
   }
 
   async disconnectIntegration(id: string) {
-    const response = await fetch(`${API_BASE_URL}/api/integrations/${id}/disconnect`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/integrations/${id}/disconnect`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
@@ -266,7 +277,7 @@ class ApiService {
 
   // Analytics
   async getAnalytics(period: string = 'week') {
-    const response = await fetch(`${API_BASE_URL}/api/analytics?period=${period}`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/analytics?period=${period}`, {
       headers: this.getHeaders(),
     });
     
@@ -275,13 +286,13 @@ class ApiService {
 
   // Health
   async healthCheck() {
-    const response = await fetch(`${API_BASE_URL}/api/health`);
+    const response = await this.safeFetch(`${API_BASE_URL}/api/health`);
     return this.handleResponse<{ status: string; services: any }>(response);
   }
 
   // Users (Admin)
   async getUsers() {
-    const response = await fetch(`${API_BASE_URL}/api/users`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/users`, {
       headers: this.getHeaders(),
     });
     
@@ -289,7 +300,7 @@ class ApiService {
   }
 
   async updateUser(id: string, updates: any) {
-    const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/users/${id}`, {
       method: 'PATCH',
       headers: this.getHeaders(),
       body: JSON.stringify(updates),
@@ -299,7 +310,7 @@ class ApiService {
   }
 
   async deleteUser(id: string) {
-    const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
+    const response = await this.safeFetch(`${API_BASE_URL}/api/users/${id}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
