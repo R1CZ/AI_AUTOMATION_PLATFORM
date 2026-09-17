@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Frontend - React SPA
   frontend:
@@ -26,15 +24,15 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - DATABASE_URL=postgresql://autoflow:autoflow_secret@postgres:5432/autoflow
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_SECRET=${JWT_SECRET:-default_jwt_secret_change_in_production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-default_refresh_secret_change_in_production}
       - REDIS_URL=redis://redis:6379
       - PYTHON_SERVICE_URL=http://python-service:8001
-      - PHP_SERVICE_URL=http://php-service:8080
+      - PHP_SERVICE_URL=http://php-service:80
       - N8N_URL=http://n8n:5678
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - AI_PROVIDER=${AI_PROVIDER:-openai}
-      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-default_webhook_secret_change_in_production}
       - CORS_ORIGIN=http://localhost:3000
       - RATE_LIMIT_WINDOW=60000
       - RATE_LIMIT_MAX=1000
@@ -56,8 +54,8 @@ services:
       - "8001:8001"
     environment:
       - AI_PROVIDER=${AI_PROVIDER:-openai}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-default_webhook_secret}
     networks:
       - autoflow-network
     restart: unless-stopped
@@ -70,7 +68,7 @@ services:
     ports:
       - "8080:80"
     environment:
-      - PHP_SERVICE_API_KEY=${PHP_SERVICE_API_KEY}
+      - PHP_SERVICE_API_KEY=${PHP_SERVICE_API_KEY:-default_php_key}
       - DB_HOST=postgres
       - DB_NAME=autoflow_legacy
       - APP_ENV=production
