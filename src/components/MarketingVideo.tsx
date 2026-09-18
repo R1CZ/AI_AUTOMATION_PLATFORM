@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, Pause, Volume2, VolumeX, Maximize2, 
   Zap, Webhook, Brain, Database, Bell, CheckCircle2,
